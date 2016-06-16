@@ -1,0 +1,29 @@
+{
+    "name": "taper/taper",
+    "type": "library",
+    "description": "Taper is a PHP micro framework",
+    "keywords": ["framework","micro","api","router"],
+    "homepage": "http://www.19www.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Lajox Nasrick",
+            "email": "lajox@19www.com",
+            "homepage": "http://www.19www.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "pimple/pimple": "^3.0",
+        "container-interop/container-interop": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Taper\\": "src/Taper"
+        }
+    },
+    "repositories": [
+        {"type": "composer", "url": "http://pkg.phpcomposer.com/repo/packagist/"},
+        {"packagist": false}
+    ]
+}
