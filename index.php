@@ -55,6 +55,7 @@ $app->before('start', function() {
 });
 */
 
+/*
 $app->hook('hello', function($name){
     return "Hello, $name!";
 });
@@ -74,8 +75,10 @@ $app->after('hello', function(&$params, &$output){
 
 $app->hello('sss');
 
+*/
 
-//$app->start();
+
+$app->start();
 
 /*
 $router = new \Taper\Router\Router(
