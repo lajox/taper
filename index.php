@@ -65,13 +65,6 @@ $app->after('hello', function(&$params, &$output){
 $app->hello('sss');
 
 */
-<<<<<<< HEAD
-
-=======
-
-
-$app->start();
->>>>>>> b07c224d05323d0e5752c95584320573d2d0e993
 
 $app->start();
 
