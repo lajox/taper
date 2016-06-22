@@ -2,6 +2,8 @@
 
 namespace Taper;
 
+use Taper\Container\ContainerInterface;
+
 class Hook
 {
     
@@ -10,7 +12,7 @@ class Hook
 
     private $app;
 
-    public function __construct(Application $app)
+    public function __construct(ContainerInterface $app)
     {
         $this->app = $app;
     }

@@ -2,7 +2,8 @@
 
 namespace Taper;
 
-use Taper\Exception\TaperException;
+use Taper\Container\ContainerInterface,
+    Taper\Exception\TaperException;
 
 class Debug
 {
@@ -23,14 +24,14 @@ class Debug
     static $cache=array("write_s"=>0,"write_f"=>0,"read_s"=>0,"read_f"=>0);
 
     /**
-     * @var Application app
+     * @var ContainerInterface app
      */
     private $app;
 
     /**
      * Constructor.
      */
-    public function __construct(Application $app)
+    public function __construct(ContainerInterface $app)
     {
         $this->app = $app;
     }
@@ -115,8 +116,8 @@ class Debug
     {
         $app = $this->app;
         $debug = self::info($start, $end);
-        $display = $app['debug_tool'] ?'block':'none';
-        include_once __DIR__.'/Tpl/debug.html';
+        $display = $app['settings']['debug_tool'] ?'block':'none';
+        include_once(__DIR__.'/Tpl/debug.html');
     }
 
 }

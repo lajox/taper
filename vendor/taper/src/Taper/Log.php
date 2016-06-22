@@ -2,6 +2,8 @@
 
 namespace Taper;
 
+use Taper\Container\ContainerInterface;
+
 class Log
 {
     // 日志级别
@@ -16,11 +18,11 @@ class Log
     static $log = array();
 
     /**
-     * @var Application app
+     * @var ContainerInterface app
      */
     private $app;
 
-    public function __construct(Application $app)
+    public function __construct(ContainerInterface $app)
     {
         $this->app = $app;
     }
@@ -33,7 +35,7 @@ class Log
      */
     public function record($message, $level = self::ERROR, $record = false)
     {
-        if ($record || in_array($level, $this->app['log.level'])) {
+        if ($record || in_array($level, $this->app['settings']['log.level'])) {
             self::$log[] = "{$level}: {$message}\r\n";
         }
     }
@@ -51,11 +53,11 @@ class Log
         $now = date(' c ');
         if (empty(self::$log)) return;
         if (is_null($destination)) {
-            $destination = $this->app['log.path'] . date("Y_m_d") . ".log";
+            $destination = $this->app['settings']['log.path'] . date("Y_m_d") . ".log";
         }
         $log = implode("", self::$log);
         $log = "[{$now}] ".$_SERVER['REMOTE_ADDR'].' '.$_SERVER['REQUEST_METHOD'].' '.$_SERVER['REQUEST_URI']."\r\n{$log}\r\n";
-        if (is_dir($this->app['log.path'])) error_log($log, $type, $destination, $extraHeaders);
+        if (is_dir($this->app['settings']['log.path'])) error_log($log, $type, $destination, $extraHeaders);
         self::$log = array();
     }
 
@@ -72,9 +74,9 @@ class Log
     public function write($message, $level = self::ERROR, $type = 3, $destination = NULL, $extraHeaders = NULL)
     {
         if (is_null($destination)) {
-            $destination = $this->app['log.path'] . date("Y_m_d") . ".log";
+            $destination = $this->app['settings']['log.path'] . date("Y_m_d") . ".log";
         }
-        if (is_dir($this->app['log.path'])) error_log(date("[ c ]") . "{$level}: {$message}\r\n", $type, $destination, $extraHeaders);
+        if (is_dir($this->app['settings']['log.path'])) error_log(date("[ c ]") . "{$level}: {$message}\r\n", $type, $destination, $extraHeaders);
     }
 
 }

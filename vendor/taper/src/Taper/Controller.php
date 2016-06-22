@@ -2,7 +2,8 @@
 
 namespace Taper;
 
-use Taper\Exception\ControllerFrozenException;
+use Taper\Container\ContainerInterface,
+    Taper\Exception\ControllerFrozenException;
 
 class Controller
 {
@@ -11,14 +12,14 @@ class Controller
     private $isFrozen = false;
 
     /**
-     * @var Application app
+     * @var ContainerInterface app
      */
     private $app;
 
     /**
      * Constructor.
      */
-    public function __construct(Application $app)
+    public function __construct(ContainerInterface $app)
     {
         $this->app = $app;
     }

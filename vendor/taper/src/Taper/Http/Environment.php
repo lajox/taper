@@ -2,9 +2,10 @@
 
 namespace Taper\Http;
 
-use Taper\Collection\Collection;
+use Taper\Collection\Collection,
+    Taper\Interfaces\Http\EnvironmentInterface;
 
-class Environment extends Collection
+class Environment extends Collection implements EnvironmentInterface
 {
     /**
      * Create mock environment

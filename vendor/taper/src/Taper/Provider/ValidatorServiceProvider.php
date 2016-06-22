@@ -2,12 +2,17 @@
 
 namespace Taper\Provider;
 
-/**
- * Symfony Validator component Provider.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class ValidatorServiceProvider extends ServiceProvider
-{
+use Taper\Container\ContainerInterface;
 
+class ValidatorServiceProvider extends DefaultServiceProvider
+{
+    /**
+     * Register validator service provider.
+     *
+     * @param ContainerInterface $container
+     */
+    public function register(ContainerInterface $container)
+    {
+
+    }
 }

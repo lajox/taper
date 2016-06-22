@@ -2,18 +2,12 @@
 
 namespace Taper;
 
-use Taper\Container\Container,
-    Taper\Provider\ServiceProviderInterface as BaseServiceProviderInterface,
-    Pimple\ServiceProviderInterface as PimpleServiceProviderInterface,
-    Taper\Http\Request,
-    Taper\Http\Response,
-    Taper\Dispatcher\Dispatcher;
+use Taper\Container\Container;
 
 class Application extends Container
 {
-    const VERSION = '1.0.0';
 
-    private $rtsfs = array('get','post','put','delete','input','trace','options','head','connect');
+    private $_rtsfs = array('get','post','put','delete','input','trace','options','head','connect');
 
     protected $providers = array();
     protected $booted = false;
@@ -27,85 +21,23 @@ class Application extends Container
      */
     public function __construct(array $values = array())
     {
-        parent::__construct();
-
         session_start();
 
-        header("Content-type: text/html; charset=utf-8");
-
-        $app = $this;
-
-        $this['version'] = self::VERSION;
-
-        $this['base_url'] = null;
-        $this['web.path'] = './web/';
-        $this['request.http_port'] = 80;
-        $this['request.https_port'] = 443;
-        $this['debug'] = false;
-        $this['charset'] = 'UTF-8';
-        $this['locale'] = 'en';
-
-        $this['handle_errors'] = true;
-        $this['log_errors'] = false;
-
-        //debug
-        $this['debug_tool'] = true;
-
-        $this['debugger'] = $this->share(function () use ($app) {
-            return new Debug($app);
-        });
-
-        $this['debugger']->start("start");
-
-        $this['dispatcher'] = $this->share(function () use ($app) {
-            return new Dispatcher($app);
-        });
-
-        $this['route'] = $this->share(function () use ($app) {
-            $route = new Route();
-
-            if (is_callable([$route, 'setContainer'])) {
-                $route->setContainer($this);
-            }
-
-            return $route;
-        });
-
-        $this['request'] = $this->share(function () use ($app) {
-            return new Request();
-        });
-
-        $this['response'] = $this->share(function () use ($app) {
-            return new Response();
-        });
-
-        $this['controller'] = $this->share(function () use ($app) {
-            return new Controller($app);
-        });
-
-        $this['hook'] = $this->share(function () use ($app) {
-            return new Hook($app);
-        });
-
-        //logger
-        $this['logger'] = $this->share(function () use ($app) {
-            return new Log($this);
-        });
-        $this['log.record'] = true;
-        $this['log.level'] = array('FATAL','ERROR','WARNING','NOTICE','INFO','SQL'); //写入日志的错误级别
-        $this['log.path'] = $this['web.path']. 'data/log/';
+        parent::__construct();
 
         foreach ($values as $key => $value) {
-            $this[$key] = $value;
+            $this['settings'][$key] = $value;
         }
+
+        $this->_get('debugger')->start("start");
 
         // Register framework methods
         $methods = array(
             'start','stop','json','jsonp','redirect'
         );
         foreach ($methods as $name) {
-            if(!in_array($name, $this->rtsfs)) {
-                $this['dispatcher']->set($name, array($this, '_'.$name));
+            if(!in_array($name, $this->_rtsfs)) {
+                $this->_get('dispatcher')->set($name, array($this, '_'.$name));
             }
         }
     }
@@ -122,55 +54,17 @@ class Application extends Container
             //throw new \Exception('Cannot override an existing framework method.');
         }
 
-        if(in_array($name, $this->rtsfs)) {
+        if(in_array($name, $this->_rtsfs)) {
             return $this->map([strtoupper($name)], $params[0], $params[1]);
         }
 
-        $callback = $this['dispatcher']->get($name);
+        $callback = $this->_get('dispatcher')->get($name);
         if (is_callable($callback)) {
-            $r = $this['dispatcher']->run($name, $params);
+            $r = $this->_get('dispatcher')->run($name, $params);
             if($name!='stop') {
                 $this->stop();
             }
             return $r;
-        }
-    }
-
-    /**
-     * Registers a service provider.
-     *
-     * @param PimpleServiceProviderInterface $provider A ServiceProviderInterface instance
-     * @param array   $values   An array of values that customizes the provider
-     *
-     * @return Application
-     */
-    public function register(PimpleServiceProviderInterface $provider, array $values = array())
-    {
-        $this->providers[] = $provider;
-
-        $provider->register($this);
-
-        foreach ($values as $key => $value) {
-            $this[$key] = $value;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Boots all service providers.
-     *
-     * This method is automatically called by handle(), but you can use it
-     * to boot all service providers when not handling a request.
-     */
-    public function boot()
-    {
-        if (!$this->booted) {
-            foreach ($this->providers as $provider) {
-                $provider->boot($this);
-            }
-
-            $this->booted = true;
         }
     }
 
@@ -199,6 +93,13 @@ class Application extends Container
      */
     public function get($pattern, $callable = null)
     {
+        //兼容容器的默认get方法
+        if($callable == null && $this->has($pattern)) {
+            return $this->_get($pattern);
+        }
+        else if($callable == null) {
+            return $this->_get($pattern);
+        }
         return $this->map(['GET'], $pattern, $callable);
     }
 
@@ -217,127 +118,9 @@ class Application extends Container
             $callable = $callable->bindTo($this);
         }
 
-        $this['route']->map($methods, $pattern, $callable);
+        $this->_get('route')->map($methods, $pattern, $callable);
 
-        return $this['route'];
-    }
-
-    /**
-     * Enables/disables custom error handling.
-     *
-     * @param bool $enabled True or false
-     */
-    public function handleErrors($enabled)
-    {
-        if ($enabled) {
-            set_error_handler(array($this, 'handleError'));
-            set_exception_handler(array($this, 'handleException'));
-        }
-        else {
-            restore_error_handler();
-            restore_exception_handler();
-        }
-    }
-
-    /**
-     * Custom error handler. Converts errors into exceptions.
-     *
-     * @param int $errno Error number
-     * @param int $errstr Error string
-     * @param int $errfile Error file name
-     * @param int $errline Error file line number
-     * @throws \ErrorException
-     */
-    public function handleError($errno, $errstr, $errfile, $errline) {
-        if ($errno & error_reporting()) {
-            throw new \ErrorException($errstr, $errno, 0, $errfile, $errline);
-        }
-    }
-
-    /**
-     * Custom exception handler. Logs exceptions.
-     *
-     * @param object $e Thrown exception
-     */
-    public function handleException($e) {
-        if ($this['log_errors']) {
-            error_log($e->getMessage());
-        }
-
-        $this->error($e);
-    }
-
-
-    /**
-     * Stop processing and returns a given response.
-     *
-     * @param int $code HTTP status code
-     * @param string $message Response message
-     */
-    public function halt($code = 200, $message = '') {
-        $this['response']
-            ->status($code)
-            ->write($message)
-            ->send();
-    }
-
-    /**
-     * Send an HTTP 500 response for any errors.
-     *
-     * @param object $e Thrown exception
-     */
-    public function error($e) {
-        $msg = sprintf('<h1>500 Internal Server Error</h1>'.
-            '<h3>%s (%s)</h3>'.
-            '<pre>%s</pre>',
-            $e->getMessage(),
-            $e->getCode(),
-            $e->getTraceAsString()
-        );
-
-        try {
-            $this['response']
-                ->status(500)
-                ->write($msg)
-                ->send();
-        }
-        catch (\Throwable $t) {
-            exit($msg);
-        }
-        catch (\Exception $ex) {
-            exit($msg);
-        }
-    }
-
-    public function notFound() {
-        $this['response']
-            ->status(404)
-            ->write(
-                '<h1>404 Not Found</h1>'.
-                '<h3>The page you have requested could not be found.</h3>'.
-                str_repeat(' ', 512)
-            )
-            ->send();
-    }
-
-    /**
-     * Stop the framework and outputs the current response.
-     *
-     * @param int $code HTTP status code
-     */
-    public function _stop($code = 200) {
-        if($this['log.record']) {
-            $this['logger']->save();
-        }
-
-        if($this['debug_tool']) {
-            $this['debugger']->show('start', 'stop');
-        }
-
-        $this['response']
-            ->status($code)
-            ->write(ob_get_clean())
-            ->send();
+        return $this->_get('route');
     }
 
     /**
@@ -351,7 +134,7 @@ class Application extends Container
     public function _json($data, $code = 200, $encode = true, $charset = 'utf-8') {
         $json = ($encode) ? json_encode($data) : $data;
 
-        $this['response']
+        $this->_get('response')
             ->status($code)
             ->header('Content-Type', 'application/json; charset='.$charset)
             ->write($json)
@@ -370,9 +153,9 @@ class Application extends Container
     public function _jsonp($data, $param = 'jsonp', $code = 200, $encode = true, $charset = 'utf-8') {
         $json = ($encode) ? json_encode($data) : $data;
 
-        $callback = $this['request']->query[$param];
+        $callback = $this->_get('request')->query[$param];
 
-        $this['response']
+        $this->_get('response')
             ->status($code)
             ->header('Content-Type', 'application/javascript; charset='.$charset)
             ->write($callback.'('.$json.');')
@@ -386,10 +169,10 @@ class Application extends Container
      * @param int $code HTTP status code
      */
     public function _redirect($url, $code = 303) {
-        $base = $this['base_url'];
+        $base = $this['settings']['base_url'];
 
         if ($base === null) {
-            $base = $this['request']->base;
+            $base = $this->_get('request')->base;
         }
 
         // Append base url to redirect url
@@ -397,10 +180,23 @@ class Application extends Container
             $url = preg_replace('#/+#', '/', $base.'/'.$url);
         }
 
-        $this['response']
+        $this->_get('response')
             ->status($code)
             ->header('Location', $url)
             ->write($url)
+            ->send();
+    }
+
+    /**
+     * Stop processing and returns a given response.
+     *
+     * @param int $code HTTP status code
+     * @param string $message Response message
+     */
+    public function halt($code = 200, $message = '') {
+        $this->_get('response')
+            ->status($code)
+            ->write($message)
             ->send();
     }
 
@@ -410,12 +206,12 @@ class Application extends Container
     public function _start() {
 
         // Enable error handling
-        $this->handleErrors( $this['handle_errors'] );
+        $this->_get('errorHandler')->handleErrors( $this['settings']['handle_errors'] );
 
         $self = $this;
-        $request = $this['request'];
-        $response = $this['response'];
-        $route = $this['route'];
+        $request = $this->_get('request');
+        $response = $this->_get('response');
+        $route = $this->_get('route');
 
         // Flush any existing output
         if (ob_get_length() > 0) {
@@ -436,10 +232,10 @@ class Application extends Container
         // Route the request
         foreach ($route->getRoutes() as $router) {
 
-            if ($router !== false && $router->matchMethod($request->method) && $router->matchUrl($request->url)) {
+            if ($router !== false && $router->matchMethod($request->getMethod()) && $router->matchUrl($request->data->url)) {
                 $params = array_values($router->params);
 
-                $this['dispatcher']->execute(
+                $this->_get('dispatcher')->execute(
                     $router->callback,
                     $params
                 );
@@ -455,8 +251,29 @@ class Application extends Container
         }
 
         if (!$dispatched) {
-            $this->notFound();
+            $this->_get('errorHandler')->notFound();
         }
+    }
+
+    /**
+     * Stop the framework and outputs the current response.
+     *
+     * @param int $code HTTP status code
+     */
+    public function _stop($code = 200) {
+        if($this['settings']['log.record']) {
+            $this->_get('logger')->save();
+        }
+
+        if($this['settings']['debug_tool']) {
+            $this->_get('response')->sendHeaders();
+            $this->_get('debugger')->show('start', 'stop');
+        }
+
+        $this->_get('response')
+            ->status($code)
+            ->write(ob_get_clean())
+            ->send();
     }
 
     /**
@@ -467,7 +284,7 @@ class Application extends Container
      */
     public function hook($name, $callback)
     {
-        $this['dispatcher']->set($name, $callback);
+        $this->_get('dispatcher')->set($name, $callback);
     }
 
     /**
@@ -477,7 +294,7 @@ class Application extends Container
      * @param callback $callback Callback function
      */
     public function before($name, $callback) {
-        $this['dispatcher']->hook($name, 'before', $callback);
+        $this->_get('dispatcher')->hook($name, 'before', $callback);
     }
 
     /**
@@ -487,7 +304,7 @@ class Application extends Container
      * @param callback $callback Callback function
      */
     public function after($name, $callback) {
-        $this['dispatcher']->hook($name, 'after', $callback);
+        $this->_get('dispatcher')->hook($name, 'after', $callback);
     }
 
 }

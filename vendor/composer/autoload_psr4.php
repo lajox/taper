@@ -7,5 +7,6 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Taper\\' => array($vendorDir . '/taper/src/Taper'),
+    'Psr\\Http\\Message\\' => array($vendorDir . '/psr/http-message/src'),
     'Interop\\Container\\' => array($vendorDir . '/container-interop/container-interop/src/Interop/Container'),
 );

@@ -1,32 +1,21 @@
 <?php
 require 'vendor/autoload.php';
 
-/*
-use \Slim\Http\Request;
-use \Slim\Http\Response;
-
-$app = new \Slim\App;
-
-$app->get('/hello/{name}', function (Request $request, Response $response) {
-
-	$myvar1 = $request->getParam('myvar'); //checks both _GET and _POST
-	$myvar2 = $request->getParsedBody()['myvar']; //checks _POST
-	//$myvar3 = $request->getQueryParams()['myvar']; //checks _GET
-
-	$name = $request->getAttribute('name');
-	$response->getBody()->write("Hello, $name");
-	return $response;
-});
-
-$app->run();
-*/
-
 $app = new \Taper\Application();
 
 
 $app->get('/', function() use ($app) {
     $app['logger']->record("haha", \Taper\Log::INFO);
-    echo 'ssss';
+
+    $myvar1 = $app['request']->getParam('myvar'); //checks both _GET and _POST
+    $myvar2 = $app['request']->getParsedBody()['myvar']; //checks _POST
+    //$myvar3 = $app['request']->getQueryParams()['myvar']; //checks _GET
+
+    //$name = $app['request']->getAttribute('name');
+    //$app['request']->getBody()->write("Hello, $name");
+    //$app['request']->getBody()->write("Hello33");
+
+    echo 'demo';
 });
 
 /*
@@ -55,6 +44,7 @@ $app->before('start', function() {
 });
 */
 
+/*
 $app->hook('hello', function($name){
     return "Hello, $name!";
 });
@@ -74,17 +64,10 @@ $app->after('hello', function(&$params, &$output){
 
 $app->hello('sss');
 
-
-//$app->start();
-
-/*
-$router = new \Taper\Router\Router(
-    array('GET' => array(
-        ':' => array(),
-        'LEAF' => array(0 => function(){ echo "Hello world 7887!!!"; }, 1 => array()))),
-    array());
-$router->execute(array(), 'GET', '');
 */
+
+
+$app->start();
 
 echo "\n<br>\n";
 exit('===end===');

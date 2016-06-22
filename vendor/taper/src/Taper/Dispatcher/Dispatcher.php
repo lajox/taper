@@ -2,7 +2,7 @@
 
 namespace Taper\Dispatcher;
 
-use Taper\Application,
+use Taper\Container\ContainerInterface,
     Taper\Log;
 
 /**
@@ -27,14 +27,14 @@ class Dispatcher {
     protected $filters = array();
 
     /**
-     * @var Application app
+     * @var ContainerInterface app
      */
     private $app;
 
     /**
      * Instantiate the dispatcher.
      */
-    public function __construct(Application $app) {
+    public function __construct(ContainerInterface $app) {
         $this->app = $app;
     }
 

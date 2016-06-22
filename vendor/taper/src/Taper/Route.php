@@ -40,7 +40,7 @@ class Route extends Container
     }
 
     public function map($methods, $pattern, $callback) {
-        $router = new Router();
+        $router = new Router($this->app);
         $router->map($methods, $pattern, $callback);
         $this->routes[] = $router;
     }

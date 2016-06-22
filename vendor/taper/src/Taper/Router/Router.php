@@ -2,8 +2,7 @@
 
 namespace Taper\Router;
 
-use Taper\Application;
-use Taper\Http\Request;
+use Taper\Container\ContainerInterface;
 
 class Router implements RouterInterface
 {
@@ -38,18 +37,19 @@ class Router implements RouterInterface
     public $splat = '';
 
     /**
-     * @var Application app
+     * @var ContainerInterface app
      */
     private $app;
 
     /**
      * Constructor.
      */
-    public function __construct() {
-        $this->methods = [ Request::getMethod() ];
+    public function __construct(ContainerInterface $app) {
+        $this->app = $app;
+        $this->methods = [ $this->app['request']->getMethod() ];
     }
 
-    public function setContainer(Application $app)
+    public function setContainer(ContainerInterface $app)
     {
         $this->app = $app;
     }
@@ -69,7 +69,7 @@ class Router implements RouterInterface
 
         $this->pattern = $pattern;
         $this->callback = $callable;
-        $this->methods = $methods ? $methods : [ Request::getMethod() ];
+        $this->methods = $methods ? $methods : [ $this->app['request']->getMethod() ];
 
         return $this;
     }
